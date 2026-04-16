@@ -1,0 +1,23 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Logs and coverage
+logs/
+.coverage
+
+# Pytest cache
+.pytest_cache/
+
+# Environment config (contains local paths)
+.env
+
+# Generated invoices
+facturas/*.xlsx

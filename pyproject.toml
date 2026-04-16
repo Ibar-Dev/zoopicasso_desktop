@@ -1,0 +1,15 @@
+[project]
+name = "facturas-gisselle"
+version = "1.0.0"
+description = "Generador de facturas para Gisselle Marin Tabares"
+requires-python = ">=3.11"
+dependencies = [
+    "flet>=0.84.0",
+    "openpyxl>=3.1.5",
+    "pywin32>=306; platform_system == 'Windows'",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+]
