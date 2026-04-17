@@ -1,6 +1,6 @@
 # main.py — Generador de Facturas · Gisselle Marin Tabares
-# Ejecutar: uv run main.py
-# Abre una ventana de escritorio nativa.
+# Ejecutar desde la raíz del proyecto: uv run generar_para_email/main.py
+# Abre el navegador en localhost:8081
 
 import hashlib
 import logging
@@ -18,7 +18,8 @@ import flet as ft
 _USUARIO_VALIDO = "Giselle"
 _HASH_PASSWORD = "2aa2d838b21d5fe3fe9819640d83e40aea9f899d93b25a0ef9858ba9f83effda"
 
-# Permite importar src.* cuando se ejecuta desde cualquier directorio.
+# Permite importar src.* relativo a esta carpeta cuando se ejecuta
+# desde la raíz del proyecto (uv run generar_para_email/main.py).
 sys.path.insert(0, str(Path(__file__).parent))
 
 # Carga la configuración centralizada de logging

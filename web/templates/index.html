@@ -1,0 +1,715 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Facturas | Zoo Picasso</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/app.css" />
+</head>
+<body>
+  <div class="bg-shape one"></div>
+  <div class="bg-shape two"></div>
+
+  <main class="shell">
+    <section id="login-card" class="card active">
+      <h1>Generador de Facturas</h1>
+      <p>Zoo Picasso · Acceso seguro</p>
+      <label>Usuario
+        <input id="usuario" type="text" placeholder="Giselle" autocomplete="username" />
+      </label>
+      <label>Contraseña
+        <input id="password" type="password" autocomplete="current-password" />
+      </label>
+      <button id="btn-login">Entrar</button>
+      <p id="login-error" class="error"></p>
+    </section>
+
+    <section id="app-card" class="card">
+      <div class="header-row">
+        <div>
+          <h2>Factura Web</h2>
+          <p id="estado">Completa los datos y genera el Excel.</p>
+        </div>
+        <button id="btn-logout" class="ghost">Salir</button>
+      </div>
+
+      <div class="grid two">
+        <label>Cliente (opcional)
+          <input id="cliente_nombre" type="text" />
+        </label>
+        <label>NIF/CIF (opcional)
+          <input id="cliente_nif" type="text" />
+        </label>
+      </div>
+
+      <label>Categoría del animal
+        <select id="categoria_animal">
+          <option value="">— Selecciona categoría —</option>
+          <option value="perro">Perro</option>
+          <option value="gato">Gato</option>
+          <option value="conejo">Conejo</option>
+          <option value="ave">Ave</option>
+          <option value="peces">Peces</option>
+          <option value="reptiles">Reptiles</option>
+          <option value="peluqueria">Peluquería</option>
+        </select>
+      </label>
+
+      <div class="lineas-head">
+        <h3>Líneas</h3>
+        <button id="btn-add" class="ghost">+ Añadir línea</button>
+      </div>
+      <div id="lineas"></div>
+
+      <div class="totales">
+        <span>IVA:</span><strong>Incluido</strong>
+        <span>Total:</span><strong id="total">0.00 €</strong>
+        <span>Facturas del día:</span><strong id="facturas-dia">0</strong>
+        <span>Acumulado del día:</span><strong id="acumulado-dia">0.00 €</strong>
+      </div>
+
+      <div class="lineas-head">
+        <h3>Ajuste Manual</h3>
+      </div>
+      <div class="fila">
+        <input id="ajuste" type="text" inputmode="decimal" placeholder="Importe EUR a restar del acumulado" />
+        <button id="btn-restar" class="ghost" type="button">Restar</button>
+      </div>
+
+      <button id="btn-generar" class="cta">Generar factura</button>
+      <p id="resultado" class="ok"></p>
+      <p id="error" class="error"></p>
+
+      <div class="lineas-head">
+        <h3>Ventas del día por categoría</h3>
+      </div>
+      <table id="tabla-animales" class="tabla-categorias">
+        <thead>
+          <tr><th>Categoría</th><th>Total (€)</th></tr>
+        </thead>
+        <tbody>
+          <tr data-cat="perro"><td>Perro</td><td>0.00</td></tr>
+          <tr data-cat="gato"><td>Gato</td><td>0.00</td></tr>
+          <tr data-cat="conejo"><td>Conejo</td><td>0.00</td></tr>
+          <tr data-cat="ave"><td>Ave</td><td>0.00</td></tr>
+          <tr data-cat="peces"><td>Peces</td><td>0.00</td></tr>
+          <tr data-cat="reptiles"><td>Reptiles</td><td>0.00</td></tr>
+          <tr data-cat="peluqueria"><td>Peluquería</td><td>0.00</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <div id="ticket-modal" class="modal-backdrop" aria-hidden="true" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="ticket-modal-title">
+      <h3 id="ticket-modal-title">Imprimir ticket</h3>
+      <p>La factura se va a generar y descargar. ¿Deseas imprimir ticket térmico ahora?</p>
+      <div class="modal-actions">
+        <button id="btn-ticket-cancelar" class="ghost" type="button">Cancelar</button>
+        <button id="btn-ticket-no" class="ghost" type="button">No imprimir</button>
+        <button id="btn-ticket-si" type="button">Sí, imprimir</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const loginCard = document.getElementById('login-card');
+    const appCard = document.getElementById('app-card');
+    const lineasEl = document.getElementById('lineas');
+    const totalEl = document.getElementById('total');
+    const facturasDiaEl = document.getElementById('facturas-dia');
+    const acumuladoDiaEl = document.getElementById('acumulado-dia');
+    const estadoEl = document.getElementById('estado');
+    const resultadoEl = document.getElementById('resultado');
+    const errorEl = document.getElementById('error');
+    const ajusteEl = document.getElementById('ajuste');
+    const ticketModalEl = document.getElementById('ticket-modal');
+    const btnTicketCancelar = document.getElementById('btn-ticket-cancelar');
+    const btnTicketNo = document.getElementById('btn-ticket-no');
+    const btnTicketSi = document.getElementById('btn-ticket-si');
+    const categoriaAnimalEl = document.getElementById('categoria_animal');
+    let acumuladoDia = 0;
+    let facturasDia = 0;
+    const totalesPorAnimal = {
+      perro: 0, gato: 0, conejo: 0, ave: 0, peces: 0, reptiles: 0, peluqueria: 0,
+    };
+    let resolverTicketModal = null;
+
+    function sha256(text) {
+      return crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)).then(buf =>
+        [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('')
+      );
+    }
+
+    function toggleView(loggedIn) {
+      loginCard.classList.toggle('active', !loggedIn);
+      appCard.classList.toggle('active', loggedIn);
+      if (!loggedIn) {
+        ticketModalEl.hidden = true;
+        ticketModalEl.classList.remove('active');
+        ticketModalEl.setAttribute('aria-hidden', 'true');
+      }
+    }
+
+    function importeEurValido(valor) {
+      return /^(0|[1-9]\d*)([\.,]\d{1,2})?$/.test(valor);
+    }
+
+    function calcTotals() {
+      const filas = [...lineasEl.querySelectorAll('.fila')];
+      let total = 0;
+      for (const fila of filas) {
+        const cant = parseInt(fila.querySelector('.cantidad').value || '0', 10);
+        const precioRaw = (fila.querySelector('.precio').value || '').trim();
+        const precio = importeEurValido(precioRaw)
+          ? Number(precioRaw.replace(',', '.'))
+          : Number.NaN;
+        const parcial = Number.isFinite(cant) && Number.isFinite(precio) ? cant * precio : 0;
+        fila.querySelector('.parcial').textContent = parcial.toFixed(2);
+        total += parcial;
+      }
+      totalEl.textContent = `${total.toFixed(2)} €`;
+    }
+
+    function addLinea(concepto = '', cantidad = 1, precio = '') {
+      const row = document.createElement('div');
+      row.className = 'fila';
+      row.innerHTML = `
+        <input class="concepto" placeholder="Concepto" value="${concepto}" />
+        <input class="cantidad" type="number" min="1" value="${cantidad}" />
+        <input class="precio" type="text" inputmode="decimal" placeholder="€" value="${precio}" />
+        <span class="parcial">0.00</span>
+        <button class="del" type="button">×</button>
+      `;
+      row.querySelector('.cantidad').addEventListener('input', calcTotals);
+      row.querySelector('.precio').addEventListener('input', calcTotals);
+      row.querySelector('.del').addEventListener('click', () => {
+        if (lineasEl.children.length <= 1) {
+          row.querySelector('.concepto').value = '';
+          row.querySelector('.cantidad').value = '1';
+          row.querySelector('.precio').value = '';
+          calcTotals();
+          return;
+        }
+        row.remove();
+        calcTotals();
+      });
+      lineasEl.appendChild(row);
+      calcTotals();
+    }
+
+    function resetFormulario() {
+      document.getElementById('cliente_nombre').value = '';
+      document.getElementById('cliente_nif').value = '';
+      categoriaAnimalEl.value = '';
+      lineasEl.innerHTML = '';
+      addLinea();
+    }
+
+    function actualizarTablaAnimales(categoria, importe) {
+      totalesPorAnimal[categoria] = Number((totalesPorAnimal[categoria] + importe).toFixed(2));
+      const fila = document.querySelector(`#tabla-animales tr[data-cat="${categoria}"]`);
+      if (fila) {
+        fila.cells[1].textContent = totalesPorAnimal[categoria].toFixed(2);
+      }
+    }
+
+    function confirmarSalida(mensaje) {
+      return window.confirm(mensaje);
+    }
+
+    function cerrarModalTicket(valor) {
+      ticketModalEl.classList.remove('active');
+      ticketModalEl.setAttribute('aria-hidden', 'true');
+      ticketModalEl.hidden = true;
+      if (resolverTicketModal) {
+        const resolve = resolverTicketModal;
+        resolverTicketModal = null;
+        resolve(valor);
+      }
+    }
+
+    function pedirImpresionTicket() {
+      return new Promise((resolve) => {
+        if (!appCard.classList.contains('active')) {
+          resolve(null);
+          return;
+        }
+        resolverTicketModal = resolve;
+        ticketModalEl.classList.add('active');
+        ticketModalEl.setAttribute('aria-hidden', 'false');
+        ticketModalEl.hidden = false;
+        btnTicketSi.focus();
+      });
+    }
+
+    function escaparHtml(valor) {
+      return String(valor ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function formatoImporte(valor) {
+      return `${Number(valor || 0).toFixed(2)} EUR`;
+    }
+
+    async function imprimirTicketNavegador(datos) {
+      const emisor = datos.emisor || {};
+      const negocio = emisor.negocio || 'Zoo Picasso';
+      const nombreEmisor = emisor.nombre_completo || 'Gisselle Marin Tabares';
+      const nifEmisor = emisor.nif || '';
+      const direccionEmisor = emisor.direccion || '';
+      const telefonoEmisor = emisor.telefono || '';
+      const emailEmisor = emisor.email || '';
+
+      const lineasHtml = datos.lineas.map((linea) => {
+        const detalle = `${linea.cantidad} x ${formatoImporte(linea.precio_unitario)}`;
+        const total = formatoImporte(linea.total_linea);
+        return `
+          <div class="linea-item">
+            <div class="linea-concepto">${escaparHtml(linea.concepto)}</div>
+            <div class="linea-detalle">${escaparHtml(detalle)}</div>
+            <div class="linea-total">${escaparHtml(total)}</div>
+          </div>
+        `;
+      }).join('');
+
+      const emisorHtml = `
+        <div class="emisor-block">
+          <div class="center bold">${escaparHtml(negocio)}</div>
+          <div class="center">${escaparHtml(nombreEmisor)}</div>
+          ${nifEmisor ? `<div>NIF: ${escaparHtml(nifEmisor)}</div>` : ''}
+          ${direccionEmisor ? `<div>${escaparHtml(direccionEmisor)}</div>` : ''}
+          ${telefonoEmisor ? `<div>Tel: ${escaparHtml(telefonoEmisor)}</div>` : ''}
+          ${emailEmisor ? `<div>${escaparHtml(emailEmisor)}</div>` : ''}
+        </div>
+      `;
+
+      const clienteHtml = (datos.cliente_nombre || datos.cliente_nif)
+        ? `
+          <div class="sep"></div>
+          ${datos.cliente_nombre ? `<div>Cliente: ${escaparHtml(datos.cliente_nombre)}</div>` : ''}
+          ${datos.cliente_nif ? `<div>NIF/CIF: ${escaparHtml(datos.cliente_nif)}</div>` : ''}
+        `
+        : '';
+
+      const html = `<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Ticket ${escaparHtml(datos.numero)}</title>
+  <style>
+    @page { size: 80mm auto; margin: 0; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #fff;
+      color: #000;
+      font-family: 'Courier New', Consolas, monospace;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    body {
+      width: 80mm;
+      max-width: 80mm;
+      padding: 2mm 2.5mm;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .ticket { width: 100%; }
+    .center { text-align: center; }
+    .bold { font-weight: 700; }
+    .sep {
+      border-top: 1px dashed #000;
+      margin: 5px 0;
+    }
+    .linea-item {
+      margin: 0 0 6px 0;
+      padding: 0;
+    }
+    .linea-concepto {
+      font-weight: 700;
+      word-break: break-word;
+      margin-bottom: 1px;
+    }
+    .linea-detalle {
+      font-size: 12px;
+      word-break: break-word;
+    }
+    .linea-total {
+      text-align: right;
+      font-weight: 700;
+      margin-top: 1px;
+    }
+    .totales {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+    .foot {
+      margin-top: 8px;
+      text-align: center;
+    }
+    @media screen {
+      body {
+        margin: 10px auto;
+        border: 1px solid #ddd;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="ticket">
+    ${emisorHtml}
+    <div class="sep"></div>
+    <div class="center">Ticket de venta</div>
+    <div class="center">Factura ${escaparHtml(datos.numero)}</div>
+    <div class="center">Fecha ${escaparHtml(datos.fecha)}</div>
+    ${clienteHtml}
+    <div class="sep"></div>
+    <div class="bold">Productos / Servicios</div>
+    <div class="sep"></div>
+    ${lineasHtml || '<div>Sin líneas de detalle</div>'}
+    <div class="sep"></div>
+    <div class="totales"><span>TOTAL</span><span>${escaparHtml(formatoImporte(datos.total))}</span></div>
+    <div>IVA incluido</div>
+    <div class="sep"></div>
+    <div class="foot">Gracias por tu compra<br/>${escaparHtml(negocio)}</div>
+  </div>
+</body>
+</html>`;
+
+      await new Promise((resolve, reject) => {
+        const iframe = document.createElement('iframe');
+        iframe.setAttribute('aria-hidden', 'true');
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+
+        let resuelto = false;
+        let timeoutId = null;
+
+        const limpiar = () => {
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
+          }
+          iframe.remove();
+        };
+
+        const resolverOk = () => {
+          if (resuelto) {
+            return;
+          }
+          resuelto = true;
+          limpiar();
+          resolve();
+        };
+
+        const resolverError = (err) => {
+          if (resuelto) {
+            return;
+          }
+          resuelto = true;
+          limpiar();
+          reject(err);
+        };
+
+        const onLoad = () => {
+          try {
+            const win = iframe.contentWindow;
+            if (!win) {
+              throw new Error('No fue posible preparar la impresión del ticket.');
+            }
+
+            // Espera al ciclo de impresión antes de limpiar el iframe,
+            // evitando cortes de contenido en algunos drivers térmicos.
+            win.addEventListener('afterprint', resolverOk, { once: true });
+
+            win.focus();
+            win.print();
+
+            // Fallback si afterprint no dispara (según navegador/driver).
+            timeoutId = setTimeout(resolverOk, 12000);
+          } catch (err) {
+            resolverError(err);
+          }
+        };
+
+        iframe.addEventListener('load', onLoad, { once: true });
+        document.body.appendChild(iframe);
+
+        if ('srcdoc' in iframe) {
+          iframe.srcdoc = html;
+          return;
+        }
+
+        try {
+          const doc = iframe.contentDocument;
+          if (!doc) {
+            throw new Error('No fue posible generar la vista de ticket.');
+          }
+          doc.open();
+          doc.write(html);
+          doc.close();
+        } catch (err) {
+          resolverError(err);
+        }
+      });
+    }
+
+    function restarAcumulado() {
+      errorEl.textContent = '';
+      const ajusteRaw = (ajusteEl.value || '').trim();
+      if (!importeEurValido(ajusteRaw)) {
+        errorEl.textContent = 'Importe invalido: usa formato EUR sin ceros a la izquierda (ej: 1100 o 1100.50).';
+        return;
+      }
+      const ajuste = Number(ajusteRaw.replace(',', '.'));
+
+      if (!Number.isFinite(ajuste) || ajuste <= 0) {
+        errorEl.textContent = 'Introduce un importe válido mayor que 0 para ajustar.';
+        return;
+      }
+
+      if (ajuste > acumuladoDia) {
+        errorEl.textContent = 'El ajuste no puede superar el acumulado del día.';
+        return;
+      }
+
+      acumuladoDia = Number((acumuladoDia - ajuste).toFixed(2));
+      acumuladoDiaEl.textContent = `${acumuladoDia.toFixed(2)} €`;
+      resultadoEl.textContent = `Ajuste aplicado: -${ajuste.toFixed(2)} € al acumulado.`;
+      ajusteEl.value = '';
+    }
+
+    async function request(path, options = {}) {
+      const res = await fetch(path, {
+        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+        credentials: 'same-origin',
+        ...options,
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || 'Error inesperado');
+      }
+      return res.json().catch(() => ({}));
+    }
+
+    async function descargarFacturaConDialogo(data) {
+      const response = await fetch(data.download_url, { credentials: 'same-origin' });
+      if (!response.ok) {
+        throw new Error('No se pudo descargar el archivo de factura.');
+      }
+      const blob = await response.blob();
+
+      if (window.showSaveFilePicker) {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: data.archivo,
+          types: [
+            {
+              description: 'Factura Excel',
+              accept: {
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+              },
+            },
+          ],
+        });
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        return;
+      }
+
+      // Fallback para navegadores sin selector nativo de guardado.
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = data.archivo;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    document.getElementById('btn-login').addEventListener('click', async () => {
+      const usuario = document.getElementById('usuario').value.trim();
+      const password = document.getElementById('password').value;
+      const error = document.getElementById('login-error');
+      error.textContent = '';
+
+      try {
+        const password_hash = await sha256(password);
+        await request('/api/login', {
+          method: 'POST',
+          body: JSON.stringify({ usuario, password_hash }),
+        });
+        toggleView(true);
+      } catch (e) {
+        error.textContent = e.message;
+      }
+    });
+
+    document.getElementById('btn-logout').addEventListener('click', async () => {
+      if (!confirmarSalida('Si sales ahora, se reiniciará la sumatoria diaria de esta sesión. ¿Deseas continuar?')) {
+        return;
+      }
+      await request('/api/logout', { method: 'POST', body: '{}' });
+      facturasDia = 0;
+      facturasDiaEl.textContent = '0';
+      acumuladoDia = 0;
+      acumuladoDiaEl.textContent = '0.00 €';
+      resetFormulario();
+      toggleView(false);
+    });
+
+    document.getElementById('btn-add').addEventListener('click', () => addLinea());
+    document.getElementById('btn-restar').addEventListener('click', restarAcumulado);
+    ajusteEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        restarAcumulado();
+      }
+    });
+
+    btnTicketCancelar.addEventListener('click', () => cerrarModalTicket(null));
+    btnTicketNo.addEventListener('click', () => cerrarModalTicket(false));
+    btnTicketSi.addEventListener('click', () => cerrarModalTicket(true));
+
+    ticketModalEl.addEventListener('click', (e) => {
+      if (e.target === ticketModalEl) {
+        cerrarModalTicket(null);
+      }
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && ticketModalEl.classList.contains('active')) {
+        cerrarModalTicket(null);
+      }
+    });
+
+    document.getElementById('btn-generar').addEventListener('click', async () => {
+      resultadoEl.textContent = '';
+      errorEl.textContent = '';
+
+      const categoriaSeleccionada = categoriaAnimalEl.value;
+      if (!categoriaSeleccionada) {
+        errorEl.textContent = 'Selecciona una categoría de animal.';
+        return;
+      }
+
+      const deseaImprimirTicket = await pedirImpresionTicket();
+      if (deseaImprimirTicket === null) {
+        resultadoEl.textContent = 'Generación cancelada por el usuario.';
+        return;
+      }
+
+      const lineas = [...lineasEl.querySelectorAll('.fila')].map((fila) => ({
+        concepto: fila.querySelector('.concepto').value.trim(),
+        cantidad: Number(fila.querySelector('.cantidad').value),
+        precio_unitario: Number((fila.querySelector('.precio').value || '').replace(',', '.')),
+      }));
+
+      const precioInvalido = [...lineasEl.querySelectorAll('.fila')].some(
+        (fila) => !importeEurValido((fila.querySelector('.precio').value || '').trim())
+      );
+      if (precioInvalido) {
+        errorEl.textContent = 'Hay precios invalidos. Usa formato EUR sin ceros a la izquierda (ej: 1100 o 1100.50).';
+        return;
+      }
+
+      try {
+        const data = await request('/api/generar', {
+          method: 'POST',
+          body: JSON.stringify({
+            cliente_nombre: document.getElementById('cliente_nombre').value,
+            cliente_nif: document.getElementById('cliente_nif').value,
+            lineas,
+            imprimir_ticket: deseaImprimirTicket,
+          }),
+        });
+
+        resultadoEl.textContent = `Factura ${data.numero} generada. Selecciona dónde guardar el archivo.`;
+        estadoEl.textContent = `Última factura: ${data.numero}`;
+        facturasDia += 1;
+        facturasDiaEl.textContent = String(facturasDia);
+        acumuladoDia += Number(data.total);
+        acumuladoDiaEl.textContent = `${acumuladoDia.toFixed(2)} €`;
+        actualizarTablaAnimales(categoriaSeleccionada, Number(data.total));
+        try {
+          await descargarFacturaConDialogo(data);
+          resultadoEl.textContent += ' Archivo guardado correctamente.';
+        } catch (err) {
+          if (err && err.name === 'AbortError') {
+            resultadoEl.textContent += ' Guardado cancelado por el usuario.';
+            return;
+          }
+          throw err;
+        }
+
+        if (deseaImprimirTicket) {
+          const clienteNombre = document.getElementById('cliente_nombre').value.trim();
+          const clienteNif = document.getElementById('cliente_nif').value.trim();
+          const fechaTicket = new Date().toLocaleDateString('es-ES');
+          const lineasTicket = lineas.map((l) => ({
+            concepto: l.concepto,
+            cantidad: l.cantidad,
+            precio_unitario: l.precio_unitario,
+            total_linea: Number(l.cantidad) * Number(l.precio_unitario),
+          }));
+
+          try {
+            await imprimirTicketNavegador({
+              numero: data.numero,
+              fecha: fechaTicket,
+              cliente_nombre: clienteNombre,
+              cliente_nif: clienteNif,
+              lineas: lineasTicket,
+              total: Number(data.total),
+              emisor: data.emisor || null,
+            });
+            resultadoEl.textContent += ' Se abrió la vista de impresión del ticket.';
+          } catch (err) {
+            errorEl.textContent = err.message || 'No se pudo abrir la impresión del ticket.';
+          }
+        }
+
+        resetFormulario();
+      } catch (e) {
+        errorEl.textContent = e.message;
+      }
+    });
+
+    window.addEventListener('beforeunload', (event) => {
+      if (!appCard.classList.contains('active')) {
+        return;
+      }
+      event.preventDefault();
+      event.returnValue = 'Si cierras la pestaña se reiniciará la sumatoria diaria de esta sesión.';
+    });
+
+    async function bootstrap() {
+      try {
+        const session = await request('/api/session');
+        toggleView(Boolean(session.logged_in));
+      } catch {
+        toggleView(false);
+      }
+      addLinea();
+    }
+
+    bootstrap();
+  </script>
+</body>
+</html>

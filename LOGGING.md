@@ -12,7 +12,7 @@ Todas las configuraciones se manejan a través de variables en el archivo `.env`
 # Nivel de logging: DEBUG, INFO, WARNING, ERROR, CRITICAL (default: INFO)
 LOG_LEVEL=INFO
 
-# Archivo de log (relativo al proyecto o ruta absoluta)
+# Archivo de log (relativo a generar_para_email/ o ruta absoluta)
 LOG_FILE=logs/app.log
 
 # Tamaño máximo del archivo de log antes de rotación, en bytes (default: 5242880 = 5MB)
@@ -22,7 +22,7 @@ LOG_MAX_BYTES=5242880
 LOG_BACKUP_COUNT=5
 
 # Ruta del contador de facturas (opcional).
-# Si es relativa, se resuelve desde la raíz del proyecto.
+# Si es relativa, se resuelve desde generar_para_email/.
 # Si no se define, usa: data/contador_facturas.json
 CONTADOR_PATH=data/contador_facturas.json
 ```
@@ -43,7 +43,7 @@ CONTADOR_PATH=data/contador_facturas.json
 
 Ejemplo:
 ```
-[2026-04-08 10:15:32] [INFO    ] [factura_writer:generar_factura_xlsx:258] Factura 2026-004 generada exitosamente en: /home/user/zoopicasso_desktop/facturas/factura_2026_004.xlsx
+[2026-04-08 10:15:32] [INFO    ] [factura_writer:generar_factura_xlsx:258] Factura 2026-004 generada exitosamente en: /home/ibardev/Development/zoo_picasso/generar_para_email/facturas/factura_2026_004.xlsx
 ```
 
 ## Ubicación de Logs
@@ -98,22 +98,22 @@ LOG_LEVEL=DEBUG
 
 ### Monitorear el archivo de log en tiempo real (Linux/Mac):
 ```bash
-tail -f logs/app.log
+tail -f generar_para_email/logs/app.log
 ```
 
 ### Monitorear el archivo de log en tiempo real (Windows):
 ```powershell
-Get-Content -Path "logs/app.log" -Wait
+Get-Content -Path "generar_para_email/logs/app.log" -Wait
 ```
 
 ### Buscar errores en el log:
 ```bash
-grep "ERROR\|CRÍTICO" logs/app.log
+grep "ERROR\|CRÍTICO" generar_para_email/logs/app.log
 ```
 
 ### Revisar últimas 50 líneas del log:
 ```bash
-tail -50 logs/app.log
+tail -50 generar_para_email/logs/app.log
 ```
 
 ## Interpretación de Mensajes Comunes
@@ -138,7 +138,7 @@ El archivo de log en `logs/app.log` puede ser monitoreado por:
 Los archivos rotados se mantienen automáticamente. Para limpiar manualmente:
 
 ```bash
-rm logs/app.log.*
+rm generar_para_email/logs/app.log.*
 ```
 
 No eliminar `app.log` en ejecución (el archivo seguirá escribiendo).
