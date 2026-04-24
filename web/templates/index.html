@@ -57,8 +57,8 @@
       <div class="totales">
         <span>IVA:</span><strong>Incluido</strong>
         <span>Total:</span><strong id="total">0.00 €</strong>
-        <span>Facturas del día:</span><strong id="facturas-dia">0</strong>
-        <span>Acumulado del día:</span><strong id="acumulado-dia">0.00 €</strong>
+        <span>Ventas activas del mes:</span><strong id="facturas-dia">0</strong>
+        <span>Ganancias del mes:</span><strong id="acumulado-dia">0.00 €</strong>
       </div>
 
       <div class="lineas-head">
@@ -70,6 +70,7 @@
       </div>
 
       <button id="btn-generar" class="cta">Generar factura</button>
+      <button id="btn-cerrar-mes" class="ghost" type="button" style="margin-top:8px;">Cerrar mes</button>
       <p id="resultado" class="ok"></p>
       <p id="error" class="error"></p>
 
@@ -78,18 +79,19 @@
       </div>
       <table id="tabla-animales" class="tabla-categorias">
         <thead>
-          <tr><th>Categoría</th><th>Total (€)</th></tr>
+          <tr><th>Categoría</th><th>Total (€)</th><th>Precio unitario (€)</th></tr>
         </thead>
         <tbody>
-          <tr data-cat="perro"><td>Perro</td><td>0.00</td></tr>
-          <tr data-cat="gato"><td>Gato</td><td>0.00</td></tr>
-          <tr data-cat="conejo"><td>Conejo</td><td>0.00</td></tr>
-          <tr data-cat="ave"><td>Ave</td><td>0.00</td></tr>
-          <tr data-cat="peces"><td>Peces</td><td>0.00</td></tr>
-          <tr data-cat="reptiles"><td>Reptiles</td><td>0.00</td></tr>
-          <tr data-cat="peluqueria"><td>Peluquería</td><td>0.00</td></tr>
+          <tr data-cat="perro"><td>Perro</td><td>0.00</td><td><input class="precio-categoria" data-cat="perro" type="number" min="0" step="0.01" /></td></tr>
+          <tr data-cat="gato"><td>Gato</td><td>0.00</td><td><input class="precio-categoria" data-cat="gato" type="number" min="0" step="0.01" /></td></tr>
+          <tr data-cat="conejo"><td>Conejo</td><td>0.00</td><td><input class="precio-categoria" data-cat="conejo" type="number" min="0" step="0.01" /></td></tr>
+          <tr data-cat="ave"><td>Ave</td><td>0.00</td><td><input class="precio-categoria" data-cat="ave" type="number" min="0" step="0.01" /></td></tr>
+          <tr data-cat="peces"><td>Peces</td><td>0.00</td><td><input class="precio-categoria" data-cat="peces" type="number" min="0" step="0.01" /></td></tr>
+          <tr data-cat="reptiles"><td>Reptiles</td><td>0.00</td><td><input class="precio-categoria" data-cat="reptiles" type="number" min="0" step="0.01" /></td></tr>
+          <tr data-cat="peluqueria"><td>Peluquería</td><td>0.00</td><td><input class="precio-categoria" data-cat="peluqueria" type="number" min="0" step="0.01" /></td></tr>
         </tbody>
       </table>
+      <button id="btn-guardar-precios" class="cta" style="margin-top:8px;">Guardar precios categorías</button>
     </section>
   </main>
 
@@ -102,6 +104,49 @@
         <button id="btn-ticket-no" class="ghost" type="button">No imprimir</button>
         <button id="btn-ticket-si" type="button">Sí, imprimir</button>
       </div>
+    </div>
+  </div>
+
+  <div id="cierre-mes-modal" class="modal-backdrop" aria-hidden="true" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="cierre-mes-modal-title">
+      <h3 id="cierre-mes-modal-title">Confirmar cierre mensual</h3>
+      <p>¡Atención! Estás por cerrar el ciclo mensual. Esto generará un reporte Excel y reiniciará los contadores a cero. Esta acción no se puede deshacer de forma manual. ¿Deseás continuar?</p>
+      <div class="modal-actions">
+        <button id="btn-cierre-cancelar" class="ghost" type="button">Cancelar</button>
+        <button id="btn-cierre-confirmar" type="button">Sí, Cerrar Mes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal método de pago -->
+  <div id="pago-modal" class="modal-backdrop" aria-hidden="true" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="pago-modal-title">
+      <h3 id="pago-modal-title">Selecciona método de pago</h3>
+      <form id="pago-form">
+        <div style="margin-bottom: 1em;">
+          <label><input type="radio" name="metodo_pago" value="efectivo" required> Efectivo</label>
+          <label><input type="radio" name="metodo_pago" value="tarjeta"> Tarjeta</label>
+          <label><input type="radio" name="metodo_pago" value="mixto"> Mixto</label>
+        </div>
+          <div id="pago-montos">
+            <div id="pago-efectivo-group" style="display:none; margin-bottom:0.5em;">
+              <label>Monto en efectivo (€): <input id="pago-efectivo" type="number" min="0" step="0.01"></label>
+            </div>
+            <div id="pago-entregado-group" style="display:none; margin-bottom:0.5em;">
+              <label>Efectivo entregado (€): <input id="pago-entregado" type="number" min="0" step="0.01"></label>
+              <span id="pago-cambio-info" style="margin-left:1em; color:#007700;"></span>
+            </div>
+            <div id="pago-tarjeta-group" style="display:none; margin-bottom:0.5em;">
+              <label>Monto en tarjeta (€): <input id="pago-tarjeta" type="number" min="0" step="0.01"></label>
+            </div>
+            <div id="pago-mixto-info" style="display:none; color:#555; font-size:0.95em; margin-bottom:0.5em;"></div>
+          </div>
+        <div class="modal-actions">
+          <button id="btn-pago-cancelar" class="ghost" type="button">Cancelar</button>
+          <button id="btn-pago-confirmar" type="submit">Aceptar</button>
+        </div>
+        <div id="pago-error" class="error" style="margin-top:0.5em;"></div>
+      </form>
     </div>
   </div>
 
@@ -120,12 +165,17 @@
     const btnTicketCancelar = document.getElementById('btn-ticket-cancelar');
     const btnTicketNo = document.getElementById('btn-ticket-no');
     const btnTicketSi = document.getElementById('btn-ticket-si');
+    const cierreMesModalEl = document.getElementById('cierre-mes-modal');
+    const btnCierreMes = document.getElementById('btn-cerrar-mes');
+    const btnCierreCancelar = document.getElementById('btn-cierre-cancelar');
+    const btnCierreConfirmar = document.getElementById('btn-cierre-confirmar');
     let acumuladoDia = 0;
     let facturasDia = 0;
     const totalesPorAnimal = {
       perro: 0, gato: 0, conejo: 0, ave: 0, peces: 0, reptiles: 0, peluqueria: 0,
     };
     let resolverTicketModal = null;
+    let resolverCierreModal = null;
 
     function sha256(text) {
       return crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)).then(buf =>
@@ -216,6 +266,31 @@
       }
     }
 
+    function resetTablaAnimales(resumen) {
+      const porCategoria = (resumen && resumen.por_categoria) ? resumen.por_categoria : {};
+      const filas = document.querySelectorAll('#tabla-animales tbody tr');
+      filas.forEach((fila) => {
+        const cat = fila.getAttribute('data-cat');
+        const total = Number(porCategoria[cat] || 0);
+        fila.cells[1].textContent = total.toFixed(2);
+        totalesPorAnimal[cat] = total;
+      });
+    }
+
+    async function refrescarResumenMensual() {
+      try {
+        const data = await request('/api/ganancias/resumen');
+        const resumen = data.resumen || { total: 0, cantidad_ventas: 0, por_categoria: {} };
+        facturasDia = Number(resumen.cantidad_ventas || 0);
+        facturasDiaEl.textContent = String(facturasDia);
+        acumuladoDia = Number(resumen.total || 0);
+        acumuladoDiaEl.textContent = `${acumuladoDia.toFixed(2)} €`;
+        resetTablaAnimales(resumen);
+      } catch (_) {
+        // Si no hay sesión o falla puntual, no romper la UI
+      }
+    }
+
     function confirmarSalida(mensaje) {
       return window.confirm(mensaje);
     }
@@ -227,6 +302,17 @@
       if (resolverTicketModal) {
         const resolve = resolverTicketModal;
         resolverTicketModal = null;
+        resolve(valor);
+      }
+    }
+
+    function cerrarModalCierre(valor) {
+      cierreMesModalEl.classList.remove('active');
+      cierreMesModalEl.setAttribute('aria-hidden', 'true');
+      cierreMesModalEl.hidden = true;
+      if (resolverCierreModal) {
+        const resolve = resolverCierreModal;
+        resolverCierreModal = null;
         resolve(valor);
       }
     }
@@ -245,6 +331,20 @@
       });
     }
 
+    function pedirConfirmacionCierreMes() {
+      return new Promise((resolve) => {
+        if (!appCard.classList.contains('active')) {
+          resolve(false);
+          return;
+        }
+        resolverCierreModal = resolve;
+        cierreMesModalEl.classList.add('active');
+        cierreMesModalEl.setAttribute('aria-hidden', 'false');
+        cierreMesModalEl.hidden = false;
+        btnCierreConfirmar.focus();
+      });
+    }
+
     function escaparHtml(valor) {
       return String(valor ?? '')
         .replaceAll('&', '&amp;')
@@ -257,6 +357,7 @@
     function formatoImporte(valor) {
       return `${Number(valor || 0).toFixed(2)} EUR`;
     }
+
 
     async function imprimirTicketNavegador(datos) {
       const emisor = datos.emisor || {};
@@ -297,6 +398,15 @@
           ${datos.cliente_nif ? `<div>NIF/CIF: ${escaparHtml(datos.cliente_nif)}</div>` : ''}
         `
         : '';
+
+      // Efectivo entregado y cambio
+      let pagoHtml = '';
+      if (datos.efectivo_entregado > 0 && (datos.metodo_pago === 'efectivo' || datos.metodo_pago === 'mixto')) {
+        pagoHtml += `<div class="totales"><span>Efectivo entregado</span><span>${escaparHtml(formatoImporte(datos.efectivo_entregado))}</span></div>`;
+        if (datos.cambio > 0) {
+          pagoHtml += `<div class="totales"><span>Cambio a devolver</span><span>${escaparHtml(formatoImporte(datos.cambio))}</span></div>`;
+        }
+      }
 
       const html = `<!doctype html>
 <html lang="es">
@@ -379,6 +489,7 @@
     ${lineasHtml || '<div>Sin líneas de detalle</div>'}
     <div class="sep"></div>
     <div class="totales"><span>TOTAL</span><span>${escaparHtml(formatoImporte(datos.total))}</span></div>
+    ${pagoHtml}
     <div>IVA incluido</div>
     <div class="sep"></div>
     <div class="foot">Gracias por tu compra<br/>${escaparHtml(negocio)}</div>
@@ -612,6 +723,8 @@
           body: JSON.stringify({ usuario, password_hash }),
         });
         toggleView(true);
+        await cargarPreciosCategorias();
+        await refrescarResumenMensual();
       } catch (e) {
         error.textContent = e.message;
       }
@@ -626,6 +739,7 @@
       facturasDiaEl.textContent = '0';
       acumuladoDia = 0;
       acumuladoDiaEl.textContent = '0.00 €';
+      resetTablaAnimales({ por_categoria: {} });
       resetFormulario();
       toggleView(false);
     });
@@ -660,6 +774,8 @@
     btnTicketCancelar.addEventListener('click', () => cerrarModalTicket(null));
     btnTicketNo.addEventListener('click', () => cerrarModalTicket(false));
     btnTicketSi.addEventListener('click', () => cerrarModalTicket(true));
+    btnCierreCancelar.addEventListener('click', () => cerrarModalCierre(false));
+    btnCierreConfirmar.addEventListener('click', () => cerrarModalCierre(true));
 
     ticketModalEl.addEventListener('click', (e) => {
       if (e.target === ticketModalEl) {
@@ -667,9 +783,193 @@
       }
     });
 
+    cierreMesModalEl.addEventListener('click', (e) => {
+      if (e.target === cierreMesModalEl) {
+        cerrarModalCierre(false);
+      }
+    });
+
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && ticketModalEl.classList.contains('active')) {
         cerrarModalTicket(null);
+      }
+      if (e.key === 'Escape' && cierreMesModalEl.classList.contains('active')) {
+        cerrarModalCierre(false);
+      }
+    });
+
+    // --- Modal método de pago ---
+    const pagoModalEl = document.getElementById('pago-modal');
+    const pagoForm = document.getElementById('pago-form');
+    const btnPagoCancelar = document.getElementById('btn-pago-cancelar');
+    const btnPagoConfirmar = document.getElementById('btn-pago-confirmar');
+    const pagoErrorEl = document.getElementById('pago-error');
+    const pagoEfectivoEl = document.getElementById('pago-efectivo');
+    const pagoTarjetaEl = document.getElementById('pago-tarjeta');
+    const pagoEntregadoEl = document.getElementById('pago-entregado');
+    const pagoEntregadoGroup = document.getElementById('pago-entregado-group');
+    const pagoCambioInfo = document.getElementById('pago-cambio-info');
+    const pagoEfectivoGroup = document.getElementById('pago-efectivo-group');
+    const pagoTarjetaGroup = document.getElementById('pago-tarjeta-group');
+    const pagoMixtoInfo = document.getElementById('pago-mixto-info');
+
+    let resolverPagoModal = null;
+
+    function abrirModalPago(totalFactura) {
+      return new Promise((resolve) => {
+        if (!appCard.classList.contains('active')) {
+          resolve(null);
+          return;
+        }
+        pagoForm.reset();
+        pagoErrorEl.textContent = '';
+        pagoEfectivoGroup.style.display = 'none';
+        pagoTarjetaGroup.style.display = 'none';
+        pagoMixtoInfo.style.display = 'none';
+        pagoModalEl.classList.add('active');
+        pagoModalEl.setAttribute('aria-hidden', 'false');
+        pagoModalEl.hidden = false;
+        resolverPagoModal = resolve;
+        // Foco en primer radio
+        setTimeout(() => {
+          const radios = pagoForm.querySelectorAll('input[name="metodo_pago"]');
+          if (radios.length) radios[0].focus();
+        }, 100);
+      });
+    }
+
+    function cerrarModalPago(valor) {
+      pagoModalEl.classList.remove('active');
+      pagoModalEl.setAttribute('aria-hidden', 'true');
+      pagoModalEl.hidden = true;
+      if (resolverPagoModal) {
+        const resolve = resolverPagoModal;
+        resolverPagoModal = null;
+        resolve(valor);
+      }
+    }
+
+    function actualizarCambio() {
+      const metodo = pagoForm.metodo_pago.value;
+      const totalFactura = Number(totalEl.textContent.replace('€','').trim());
+      let efectivo = Number(pagoEfectivoEl.value || 0);
+      let entregado = Number(pagoEntregadoEl.value || 0);
+      let cambio = 0;
+      if (metodo === 'efectivo' || metodo === 'mixto') {
+        if (entregado > 0 && efectivo > 0 && entregado >= efectivo) {
+          cambio = +(entregado - efectivo).toFixed(2);
+          pagoCambioInfo.textContent = `Cambio: ${cambio.toFixed(2)} €`;
+        } else {
+          pagoCambioInfo.textContent = '';
+        }
+      } else {
+        pagoCambioInfo.textContent = '';
+      }
+    }
+
+    pagoForm.addEventListener('change', (e) => {
+      const metodo = pagoForm.metodo_pago.value;
+      pagoErrorEl.textContent = '';
+      pagoEntregadoGroup.style.display = 'none';
+      if (metodo === 'efectivo') {
+        pagoEfectivoGroup.style.display = '';
+        pagoEntregadoGroup.style.display = '';
+        pagoTarjetaGroup.style.display = 'none';
+        pagoMixtoInfo.style.display = 'none';
+      } else if (metodo === 'tarjeta') {
+        pagoEfectivoGroup.style.display = 'none';
+        pagoEntregadoGroup.style.display = 'none';
+        pagoTarjetaGroup.style.display = '';
+        pagoMixtoInfo.style.display = 'none';
+      } else if (metodo === 'mixto') {
+        pagoEfectivoGroup.style.display = '';
+        pagoEntregadoGroup.style.display = '';
+        pagoTarjetaGroup.style.display = 'none';
+        pagoMixtoInfo.style.display = '';
+        pagoMixtoInfo.textContent = 'Ingresa el monto en efectivo. El resto se calculará automáticamente como tarjeta.';
+      }
+      actualizarCambio();
+    });
+
+    pagoEfectivoEl.addEventListener('input', actualizarCambio);
+    pagoEntregadoEl.addEventListener('input', actualizarCambio);
+
+    btnPagoCancelar.addEventListener('click', () => cerrarModalPago(null));
+    pagoModalEl.addEventListener('click', (e) => {
+      if (e.target === pagoModalEl) cerrarModalPago(null);
+    });
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && pagoModalEl.classList.contains('active')) cerrarModalPago(null);
+    });
+
+    pagoForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const metodo = pagoForm.metodo_pago.value;
+      let montoEfectivo = Number(pagoEfectivoEl.value || 0);
+      let montoTarjeta = Number(pagoTarjetaEl.value || 0);
+      let efectivoEntregado = Number(pagoEntregadoEl.value || 0);
+      const totalFactura = Number(totalEl.textContent.replace('€','').trim());
+      const tolerancia = 0.01;
+      if (metodo === 'efectivo') {
+        if (montoEfectivo <= 0 || Math.abs(montoEfectivo - totalFactura) > tolerancia) {
+          pagoErrorEl.textContent = 'El monto en efectivo debe ser igual al total.';
+          pagoEfectivoEl.focus();
+          return;
+        }
+        if (efectivoEntregado < montoEfectivo) {
+          pagoErrorEl.textContent = 'El efectivo entregado debe ser igual o mayor al total.';
+          pagoEntregadoEl.focus();
+          return;
+        }
+        montoTarjeta = 0;
+      } else if (metodo === 'tarjeta') {
+        if (montoTarjeta <= 0 || Math.abs(montoTarjeta - totalFactura) > tolerancia) {
+          pagoErrorEl.textContent = 'El monto en tarjeta debe ser igual al total.';
+          pagoTarjetaEl.focus();
+          return;
+        }
+        montoEfectivo = 0;
+        efectivoEntregado = 0;
+      } else if (metodo === 'mixto') {
+        if (montoEfectivo < 0 || montoEfectivo > totalFactura) {
+          pagoErrorEl.textContent = 'El monto en efectivo debe ser entre 0 y el total.';
+          pagoEfectivoEl.focus();
+          return;
+        }
+        if (efectivoEntregado < montoEfectivo) {
+          pagoErrorEl.textContent = 'El efectivo entregado debe ser igual o mayor al efectivo a pagar.';
+          pagoEntregadoEl.focus();
+          return;
+        }
+        montoTarjeta = +(totalFactura - montoEfectivo).toFixed(2);
+        if (montoTarjeta < 0 || Math.abs(montoEfectivo + montoTarjeta - totalFactura) > tolerancia) {
+          pagoErrorEl.textContent = 'La suma de efectivo y tarjeta debe ser igual al total.';
+          pagoEfectivoEl.focus();
+          return;
+        }
+      } else {
+        pagoErrorEl.textContent = 'Selecciona un método de pago.';
+        return;
+      }
+      cerrarModalPago({ metodo_pago: metodo, monto_efectivo: +montoEfectivo, monto_tarjeta: +montoTarjeta, efectivo_entregado: +efectivoEntregado });
+    });
+      errorEl.textContent = '';
+      resultadoEl.textContent = '';
+      const confirmado = await pedirConfirmacionCierreMes();
+      if (!confirmado) {
+        resultadoEl.textContent = 'Cierre mensual cancelado.';
+        return;
+      }
+
+      try {
+        const data = await request('/api/ganancias/cierre-mes', {
+          method: 'POST',
+          body: JSON.stringify({ confirmacion: true }),
+        });
+        resultadoEl.textContent = data.mensaje || 'Cierre mensual completado.';
+        await refrescarResumenMensual();
+      } catch (e) {
+        errorEl.textContent = e.message || 'No se pudo completar el cierre mensual.';
       }
     });
 
@@ -685,6 +985,16 @@
         return;
       }
 
+
+      // Paso 1: método de pago
+      const totalFactura = Number(totalEl.textContent.replace('€','').trim());
+      const pago = await abrirModalPago(totalFactura);
+      if (!pago) {
+        resultadoEl.textContent = 'Generación cancelada por el usuario.';
+        return;
+      }
+
+      // Paso 2: ticket
       const deseaImprimirTicket = await pedirImpresionTicket();
       if (deseaImprimirTicket === null) {
         resultadoEl.textContent = 'Generación cancelada por el usuario.';
@@ -706,6 +1016,7 @@
         return;
       }
 
+
       try {
         const data = await request('/api/generar', {
           method: 'POST',
@@ -714,6 +1025,9 @@
             cliente_nif: document.getElementById('cliente_nif').value,
             lineas,
             imprimir_ticket: deseaImprimirTicket,
+            metodo_pago: pago.metodo_pago,
+            monto_efectivo: pago.monto_efectivo,
+            monto_tarjeta: pago.monto_tarjeta,
           }),
         });
 
@@ -757,6 +1071,9 @@
               lineas: lineasTicket,
               total: Number(data.total),
               emisor: data.emisor || null,
+              efectivo_entregado: pago.efectivo_entregado || 0,
+              cambio: (typeof pago.efectivo_entregado === 'number' && typeof pago.monto_efectivo === 'number' && pago.efectivo_entregado > 0 && pago.efectivo_entregado >= pago.monto_efectivo) ? +(pago.efectivo_entregado - pago.monto_efectivo).toFixed(2) : 0,
+              metodo_pago: pago.metodo_pago,
             });
             resultadoEl.textContent += ' Se abrió la vista de impresión del ticket.';
           } catch (err) {
@@ -764,6 +1081,7 @@
           }
         }
 
+        await refrescarResumenMensual();
         resetFormulario();
       } catch (e) {
         errorEl.textContent = e.message;
@@ -778,10 +1096,60 @@
       event.returnValue = 'Si cierras la pestaña se reiniciará la sumatoria diaria de esta sesión.';
     });
 
+    // ── Precios por categoría: edición y guardado global ──────────────────────
+    const btnGuardarPrecios = document.getElementById('btn-guardar-precios');
+    const preciosInputs = document.querySelectorAll('.precio-categoria');
+    let preciosCategorias = {};
+
+    async function cargarPreciosCategorias() {
+      try {
+        const res = await request('/api/precios_categorias');
+        preciosCategorias = res.precios || {};
+        preciosInputs.forEach(input => {
+          const cat = input.getAttribute('data-cat');
+          if (cat && preciosCategorias[cat] !== undefined) {
+            input.value = preciosCategorias[cat];
+          }
+        });
+      } catch (_) {
+        // Si falla (e.g. no autenticado), no se muestran errores aquí
+      }
+    }
+
+    async function guardarPreciosCategorias() {
+      if (!window.confirm('¿Seguro que deseas modificar los precios de las categorías? Esto afectará a todos los usuarios.')) {
+        return;
+      }
+      const nuevosPrecios = {};
+      preciosInputs.forEach(input => {
+        const cat = input.getAttribute('data-cat');
+        const val = parseFloat(input.value);
+        if (cat && !isNaN(val) && val >= 0) {
+          nuevosPrecios[cat] = val;
+        }
+      });
+      try {
+        await request('/api/precios_categorias', {
+          method: 'POST',
+          body: JSON.stringify({ precios: nuevosPrecios }),
+        });
+        mostrarToast('Precios actualizados');
+        await cargarPreciosCategorias();
+      } catch (e) {
+        errorEl.textContent = 'No se pudieron guardar los precios.';
+      }
+    }
+
+    btnGuardarPrecios.addEventListener('click', guardarPreciosCategorias);
+
     async function bootstrap() {
       try {
         const session = await request('/api/session');
         toggleView(Boolean(session.logged_in));
+        if (session.logged_in) {
+          await cargarPreciosCategorias();
+          await refrescarResumenMensual();
+        }
       } catch {
         toggleView(false);
       }
